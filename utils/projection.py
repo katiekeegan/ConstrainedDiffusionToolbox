@@ -316,4 +316,4 @@ class TestSimpleConstraintProjector(unittest.TestCase):
         self.assertTrue(x_proj[0]**2 + x_proj[1]**2 - 1 >= 0, "Nonlinear inequality constraint not satisfied.")
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main() 
