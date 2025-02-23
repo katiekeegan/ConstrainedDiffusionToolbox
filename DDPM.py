@@ -1,4 +1,7 @@
 import torch
+import wandb
+from torch.utils.data import DataLoader
+from torch import optim, nn
 
 class DDPM:
     def __init__(
@@ -20,7 +23,6 @@ class DDPM:
         self.project_x0_sample = project_x0_sample
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.project_x0 or self.penalize_P or self.penalize_orth_dist:
-            # assert A is not None and b is not None, "Must provide A and b when using projection"
             self.projector = SimpleConstraintProjector()
             self.projector.add_constraints_from_dict(constraints_dict)
         else:
@@ -104,6 +106,13 @@ class DDPM:
             # Compute average loss for the epoch
             avg_loss = total_loss / len(self.dataloader)
             self.training_losses.append(avg_loss)
+
+            # Log metrics to wandb
+            wandb.log({
+                "epoch": epoch + 1,
+                "loss": avg_loss,
+                "projection_norm": avg_projection_norm if total_projection_norm != 0 else 0,
+            })
 
     def sample(self, num_samples=1000):
         """Generate 2D points using epsilon prediction with projection into the unit circle."""
