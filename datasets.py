@@ -29,14 +29,15 @@ class SmileyFaceDataset(Dataset):
         # Set up the constraint projector
         if constraint_projector is not None:
             self.constraint_projector = constraint_projector
-        else:
+        if (A is not None and b is not None) or (sphere_center is not None and sphere_radius is not None):
             self.constraint_projector = SimpleConstraintProjector()
-            if A is None:
-                A = np.array([1.0, 2.0, 3.0])  # Default normal vector
-            A_norm = A / np.linalg.norm(A)
-            A_tensor = torch.tensor(A_norm, dtype=torch.float32)
-            b_tensor = torch.tensor([b], dtype=torch.float32)
-            self.constraint_projector.add_linear_equality(A_tensor, b_tensor)
+            if A is not None and b is not None:
+                A_norm = A / np.linalg.norm(A)
+                A_tensor = torch.tensor(A_norm, dtype=torch.float32)
+                b_tensor = torch.tensor([b], dtype=torch.float32)
+                self.constraint_projector.add_linear_equality(A_tensor, b_tensor)
+            elif sphere_center is not None and sphere_radius is not None:
+                self.constraint_projector.add_sphere_constraint(sphere_center, sphere_radius)
 
         # Optionally handle sphere parameters
         self.sphere_center = sphere_center if sphere_center is not None else np.array([0.0, 0.0, 0.0])
@@ -54,23 +55,23 @@ class SmileyFaceDataset(Dataset):
 
         # Generate circle outline (face)
         angles = np.linspace(0, 2 * np.pi, self.num_samples // 2)
-        face_x = 1.5 * np.cos(angles)
-        face_y = 1.5 * np.sin(angles)
+        face_x = 1 * np.cos(angles)
+        face_y = 1 * np.sin(angles)
 
         # Generate eyes
         eye_x = np.concatenate([
-            np.random.normal(-0.8, 0.1, self.num_samples // 8),
-            np.random.normal(0.8, 0.1, self.num_samples // 8)
+            np.random.normal(-0.4, 0.01, self.num_samples // 8),
+            np.random.normal(0.4, 0.01, self.num_samples // 8)
         ])
         eye_y = np.concatenate([
-            np.random.normal(0.8, 0.1, self.num_samples // 8),
-            np.random.normal(0.8, 0.1, self.num_samples // 8)
+            np.random.normal(0.4, 0.01, self.num_samples // 8),
+            np.random.normal(0.4, 0.01, self.num_samples // 8)
         ])
 
         # Generate mouth (smile arc)
         mouth_angles = np.linspace(-np.pi / 4, np.pi / 4, self.num_samples // 4)
-        mouth_x = 0.8 * np.cos(mouth_angles)
-        mouth_y = 0.6 * np.sin(mouth_angles)
+        mouth_x = 0.3 * np.cos(mouth_angles)
+        mouth_y = 0.4 * np.sin(mouth_angles)
 
         # Rotate mouth 90 degrees clockwise
         mouth_x, mouth_y = mouth_y, -mouth_x
@@ -116,23 +117,23 @@ class SmileyFaceDataset(Dataset):
                 normal = None
                 if self.constraint_projector.linear_equalities:
                     # Linear equality constraint: normal is A_eq
-                    A_eq = self.constraint_projector.linear_equalities[0][0].numpy()#.flatten()
+                    A_eq = self.constraint_projector.linear_equalities[0][0].squeeze()#.numpy()#.flatten()
                     normal = A_eq
                     # Generate a random noise vector in 3D
-                    noise = self.noise_level * np.random.randn((3))
-                    
-                    noise_orth = np.dot(noise, normal) * normal  # Radial noise component
-                    sample_3d += noise_orth
+                    noise = self.noise_level * torch.randn((3))
+                    print(np.shape(normal))
+                    print(np.shape(noise))
+                    noise_orth = torch.dot(noise, normal) #* normal  # Radial noise component
+                    sample_3d += noise_orth.numpy()
                 elif self.constraint_projector.sphere_constraints:
-                    normal = sample_3d/np.linalg.norm(sample_3d)
                     # Generate a random noise vector in 3D
-                    noise = self.noise_level * (2*np.random.randn(3)-1)  # Uniform random noise
-                    
-                    # The noise should be in the direction of the radial vector, so add this noise along the normal direction
-                    noise_orth = np.dot(noise, normal) * normal  # Radial noise component
-
+                    noise = self.noise_level * torch.randn(3)  # Uniform random noise
+                    # noise_tangent = noise - torch.dot(noise,normal)
+                    # # # The noise should be in the direction of the radial vector, so add this noise along the normal direction
+                    # # noise_orth = np.dot(noise, normal)# * normal  # Radial noise component
+                    noise_orth = noise * sample_3d
                     # Add the orthogonal (radial) noise to the sample
-                    sample_3d += noise_orth
+                    sample_3d += noise_orth.numpy()
 
 
             samples.append(sample_3d)

@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 
-def plot_points_3d(points_list, A=None, b=None, plot_density=False,labels=['Generated Points', 'Data']):
+def plot_points_3d(points_list, A=None, b=None, sphere_center=None, sphere_radius=None,resolution = 100,  plot_density=False,labels=['Generated Points', 'Data']):
     """
     Plot the points in 3D and include the plane defined by Ax = b as a visualization using Plotly.
     """
@@ -31,6 +31,17 @@ def plot_points_3d(points_list, A=None, b=None, plot_density=False,labels=['Gene
             colorscale='Reds',
             opacity=0.5,
             name='Plane'
+        ))
+    if sphere_center is not None and sphere_radius is not None:
+        u, v = np.mgrid[0:2*np.pi:resolution*2j, 0:np.pi:resolution*1j]
+        xx = sphere_radius * np.cos(u)*np.sin(v) + sphere_center[0]
+        yy = sphere_radius * np.sin(u)*np.sin(v) + sphere_center[1]
+        zz = sphere_radius * np.cos(v) + sphere_center[2]
+        fig.add_trace(go.Surface(
+            x=xx, y=yy, z=zz,
+            colorscale='Reds',
+            opacity=0.5,
+            name='Sphere'
         ))
 
     # Update layout
