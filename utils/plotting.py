@@ -1,7 +1,10 @@
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+import numpy as np
+from scipy.stats import gaussian_kde
 
-def plot_points_3d(points_list, A, b, labels=['Generated Points', 'Data']):
+
+def plot_points_3d(points_list, A=None, b=None, plot_density=False,labels=['Generated Points', 'Data']):
     """
     Plot the points in 3D and include the plane defined by Ax = b as a visualization using Plotly.
     """
@@ -9,23 +12,26 @@ def plot_points_3d(points_list, A, b, labels=['Generated Points', 'Data']):
 
     for i, points in enumerate(points_list):
         # Plot the generated points
+        points_density = None
+        if plot_density:
+            points_density = gaussian_kde(np.transpose(points))(np.transpose(points))
         fig.add_trace(go.Scatter3d(
             x=points[:, 0], y=points[:, 1], z=points[:, 2],
             mode='markers',
-            marker=dict(size=5, opacity=0.8),
+            marker=dict(size=5,  color=points_density if points_density else 'blue', colorscale='Viridis', opacity=0.7),
             name=labels[i]
         ))
-
     # Plot the plane
-    xx, yy = np.meshgrid(np.linspace(-5, 5, 10), np.linspace(-5, 5, 10))
-    zz = (b - A[0] * xx - A[1] * yy) / A[2]  # Solve for z in Ax + By + Cz = b
+    if A is not None and b is not None:
+        xx, yy = np.meshgrid(np.linspace(-5, 5, 10), np.linspace(-5, 5, 10))
+        zz = (b - A[0] * xx - A[1] * yy) / A[2]  # Solve for z in Ax + By + Cz = b
 
-    fig.add_trace(go.Surface(
-        x=xx, y=yy, z=zz,
-        colorscale='Reds',
-        opacity=0.5,
-        name='Plane'
-    ))
+        fig.add_trace(go.Surface(
+            x=xx, y=yy, z=zz,
+            colorscale='Reds',
+            opacity=0.5,
+            name='Plane'
+        ))
 
     # Update layout
     fig.update_layout(
