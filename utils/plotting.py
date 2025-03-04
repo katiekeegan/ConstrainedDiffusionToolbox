@@ -3,6 +3,32 @@ import plotly.graph_objects as go
 import numpy as np
 from scipy.stats import gaussian_kde
 
+def plot_mesh_points(vertices, pdf_values):
+    fig = go.Figure(
+    data=[go.Scatter3d(
+        x=vertices[:, 0], 
+        y=vertices[:, 1], 
+        z=vertices[:, 2], 
+        mode='markers',
+        marker=dict(
+            size=5,
+            color=pdf_values.numpy(),  # Color by pdf_values
+            colorscale='viridis',
+            opacity=0.8
+        )
+    )]
+    )
+
+    fig.update_layout(
+        scene=dict(
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Z"
+        ),
+        margin=dict(l=0, r=0, b=0, t=0)
+    )
+
+    return fig
 
 def plot_points_3d(points_list, A=None, b=None, sphere_center=None, sphere_radius=None,resolution = 100,  plot_density=False,labels=['Generated Points', 'Data']):
     """

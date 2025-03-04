@@ -55,7 +55,7 @@ class BunnyDataset(Dataset):
             for i in range(0,samples_on_surface.size(0)):
                 vertex_normal = vertex_normals[i]
                 noise = self.noise_level * torch.randn((3))
-                noise_orth = torch.dot(noise, normal) * normal
+                noise_orth = torch.dot(noise, vertex_normal) * vertex_normal
                 samples_on_surface[i,:] += noise_orth
         
         return samples_on_surface
