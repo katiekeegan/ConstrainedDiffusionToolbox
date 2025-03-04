@@ -2,6 +2,41 @@ import torch
 import unittest
 import numpy as np
 
+def find_nearest_vertex(point, vertices):
+    """Find the closest vertex in the mesh to a given point."""
+    dists = torch.norm(vertices - point, dim=1)
+    nearest_idx = torch.argmin(dists)
+    return nearest_idx, vertices[nearest_idx]
+
+def project_to_surface(point, vertices, vertex_normals):
+    """Project a point orthogonally onto the surface using the nearest vertex's normal."""
+    nearest_idx, nearest_vertex = find_nearest_vertex(point, vertices)
+    normal = vertex_normals[nearest_idx]
+    
+    # Compute orthogonal projection
+    proj_point = point - normal * torch.dot(point - nearest_vertex, normal)
+    return proj_point
+
+class MeshConstraintProjector:
+    def __init__(self, mesh_path=None):
+        self.mesh_path = mesh_path
+        self.mesh = trimesh.load_mesh(mesh_path)
+        self.vertices = mesh.vertices
+        self.vertex_normals = mesh.vertex_normals
+
+    def project(self, x):
+        x = x.squeeze()
+        if len(x.size()) < 2:
+            x = x.unsqueeze(0) # Make sure first dimension is the batch dimension
+        batch_size = x.size(0)
+        x_projected = torch.zeros_like(x)
+        for i in range(0,batch_size):
+            point = x[i,:]
+            point_projected = project_to_surface(point, self.vertices, self.vertex_normals)
+            x_projected[i,:] = point_projected
+        
+        return x_projected
+
 class SimpleConstraintProjector:
     def __init__(self):
         self.linear_equalities = []

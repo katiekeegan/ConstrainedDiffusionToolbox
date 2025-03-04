@@ -3,6 +3,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from utils.constraints import SimpleConstraintProjector
 import unittest
+from torch.distributions.multivariate_normal import MultivariateNormal
+import trimesh
 
 class PointDataset(Dataset):
     """ Custom dataset for 2D points. """
@@ -14,6 +16,56 @@ class PointDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.data[idx]
+
+class BunnyDataset(Dataset):
+    def __init__(self, num_samples=1000, noise_level=1, example=False, bunny_path='data/bunny.obj'):
+        self.num_samples = num_samples
+        self.noise_level = noise_level
+        self.example = example
+        self.bunny_path = bunny_path
+        self.data = self._get_data()
+
+    def _get_data(self):
+        bunny = trimesh.load_mesh(self.bunny_path)
+        # Extract vertex positions (N, 3) and face indices (M, 3)
+        vertices = torch.tensor(bunny.vertices, dtype=torch.float32)
+        faces = torch.tensor(bunny.faces, dtype=torch.long)
+
+        mean_idx = torch.randint(0, vertices.shape[0], (1,))
+        mu = vertices[mean_idx]  # Pick a random vertex as the mean
+
+        sigma = 0.02  # Adjust spread
+        cov = sigma * torch.eye(3)
+
+        # Create the Gaussian distribution
+        gaussian = MultivariateNormal(mu.squeeze(), covariance_matrix=cov)
+
+        # Compute probability density at each vertex
+        pdf_values = torch.exp(gaussian.log_prob(vertices))  # (N,)
+        self.vertices = vertices
+        self.pdf_values = pdf_values
+        samples = gaussian.sample((self.num_samples,))  # Sample in 3D
+
+        # Find closest mesh vertices for each sample (optional projection)
+        _, indices = torch.cdist(samples, vertices).min(dim=1)
+        samples_on_surface = vertices[indices].squeeze()
+        # Generate 3D points and project
+        if self.example:
+            vertex_normals = torch.tensor(bunny.vertex_normals, dtype=torch.float32)  # (N, 3)
+            for i in range(0,samples_on_surface.size(0)):
+                vertex_normal = vertex_normals[i]
+                noise = self.noise_level * torch.randn((3))
+                noise_orth = torch.dot(noise, normal) * normal
+                samples_on_surface[i,:] += noise_orth
+        
+        return samples_on_surface
+
+    def __len__(self):
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
 
 class SmileyFaceDataset(Dataset):
     def __init__(self, num_samples=1000, constraint_projector=None, A=None, b=0.0, 
