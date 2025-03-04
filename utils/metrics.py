@@ -26,6 +26,8 @@ def compute_kl_divergence_kde(pc1, pc2, bandwidth=0.1):
 
 # Compute KL divergence using histograms in PyTorch
 def compute_kl_divergence_hist(pc1, pc2, bins=20):
+    pc1 = torch.tensor(pc1)
+    pc2 = torch.tensor(pc2)
     # Get the min and max for each dimension to create histogram bins
     min_vals = torch.min(torch.cat((pc1, pc2), dim=0), dim=0)[0]
     max_vals = torch.max(torch.cat((pc1, pc2), dim=0), dim=0)[0]

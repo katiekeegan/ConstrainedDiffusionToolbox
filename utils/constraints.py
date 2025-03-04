@@ -39,6 +39,9 @@ class SimpleConstraintProjector:
             elif constraint_type == "nonlinear_inequality":
                 inequality_func = constraints
                 self.add_nonlinear_inequality(inequality_func)
+            elif constraint_type == "sphere_equality":
+                sphere_center, sphere_radius = constraints
+                self.add_sphere_constraint(sphere_center, sphere_radius)
             else:
                 raise ValueError(f"Unknown constraint type: {constraint_type}")
 

@@ -117,13 +117,13 @@ class SmileyFaceDataset(Dataset):
                 normal = None
                 if self.constraint_projector.linear_equalities:
                     # Linear equality constraint: normal is A_eq
-                    A_eq = self.constraint_projector.linear_equalities[0][0].squeeze()#.numpy()#.flatten()
+                    A_eq = self.constraint_projector.linear_equalities[0][0].squeeze()#.flatten()
                     normal = A_eq
                     # Generate a random noise vector in 3D
                     noise = self.noise_level * torch.randn((3))
                     print(np.shape(normal))
                     print(np.shape(noise))
-                    noise_orth = torch.dot(noise, normal) #* normal  # Radial noise component
+                    noise_orth = torch.dot(noise, normal) * normal  # Radial noise component
                     sample_3d += noise_orth.numpy()
                 elif self.constraint_projector.sphere_constraints:
                     # Generate a random noise vector in 3D
